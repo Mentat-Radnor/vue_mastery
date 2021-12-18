@@ -5,6 +5,23 @@
       :key="'event' + index"
       :event="event"
     ></event-card>
+    <div class="pagination">
+      <router-link
+        id="prev"
+        :to="{ name: 'EventList', query: { page: page - 1 } }"
+        rel="prev"
+        v-if="page != 1"
+        >Prev Page</router-link
+      >
+
+      <router-link
+        id="next"
+        :to="{ name: 'EventList', query: { page: page + 1 } }"
+        rel="next"
+        v-if="hasNextPage"
+        >Next Page</router-link
+      >
+    </div>
   </div>
 </template>
 
@@ -12,24 +29,65 @@
 // @ is an alias to /src
 import EventCard from '@/components/event-card.vue'
 import EventService from '@/service/EventService.js'
+import NProgress from 'nprogress'
 
 export default {
   name: 'EventList',
   components: {
     EventCard,
   },
+  props: {
+    page: {
+      type: Number,
+      default: 1,
+    },
+  },
   data() {
     return {
       events: null,
+      totalEvents: 0,
     }
   },
-  async created() {
+  async beforeRouteEnter(routeTo, roteFrom, next) {
+    NProgress.start()
+
     try {
-      const { data } = await EventService.getEvents()
-      this.events = data
+      const { data, headers } = await EventService.getEvents(
+        2,
+        parseInt(routeTo.query.page) || 1
+      )
+      next((comp) => {
+        comp.events = data
+        comp.totalEvents = headers['x-total-count']
+      })
     } catch (error) {
-      console.log(error)
+      next({ name: 'NetworkError' })
+    } finally {
+      NProgress.done()
     }
+  },
+  async beforeRouteUpdate(routeTo) {
+    NProgress.start()
+
+    try {
+      const { data, headers } = await EventService.getEvents(
+        2,
+        parseInt(routeTo.query.page) || 1
+      )
+
+      this.events = data
+      this.totalEvents = headers['x-total-count']
+    } catch (error) {
+      return { name: 'NetworkError' }
+    } finally {
+      NProgress.done()
+    }
+  },
+  computed: {
+    hasNextPage() {
+      let totalPages = Math.ceil(this.totalEvents / 2)
+      return this.page < totalPages
+    },
   },
 }
 </script>
