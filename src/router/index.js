@@ -5,13 +5,16 @@ import EventLayout from '@/views/event/Layout.vue'
 import EventDetails from '@/views/event/Details.vue'
 import EventEdit from '@/views/event/Edit.vue'
 import EventRegister from '@/views/event/Register.vue'
-import About from '@/views/About.vue'
+
 import NotFound from '@/views/NotFound.vue'
 import NetworkError from '@/views/NetworkError.vue'
 import NProgress from 'nprogress'
 
 import EventService from '@/service/EventService.js'
 import GStore from '@/store'
+
+// lazy loading
+const About = () => import('@/views/About.vue')
 
 const routes = [
   {
@@ -29,6 +32,7 @@ const routes = [
   {
     path: '/about',
     redirect: { name: 'About' },
+    component: () => import('../views/About.vue'),
   },
   {
     path: '/events/:id',
@@ -68,6 +72,7 @@ const routes = [
         name: 'EventEdit',
 
         component: EventEdit,
+        meta: { requireAuth: true },
       },
     ],
   },
@@ -101,8 +106,24 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(() => {
+router.beforeEach((to, from) => {
   NProgress.start()
+
+  const notAuthorized = true
+
+  if (to.meta.requireAuth && notAuthorized) {
+    GStore.flashMessage = 'Sorry, your not authorized'
+
+    setTimeout(() => {
+      GStore.flashMessage = ''
+    }, 3000)
+    console.log(from)
+    if (from.href) {
+      return false
+    } else {
+      return { path: '/' }
+    }
+  }
 })
 
 router.afterEach(() => {
