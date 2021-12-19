@@ -29,7 +29,6 @@
 // @ is an alias to /src
 import EventCard from '@/components/event-card.vue'
 import EventService from '@/service/EventService.js'
-import NProgress from 'nprogress'
 
 export default {
   name: 'EventList',
@@ -49,8 +48,6 @@ export default {
     }
   },
   async beforeRouteEnter(routeTo, roteFrom, next) {
-    NProgress.start()
-
     try {
       const { data, headers } = await EventService.getEvents(
         2,
@@ -62,13 +59,9 @@ export default {
       })
     } catch (error) {
       next({ name: 'NetworkError' })
-    } finally {
-      NProgress.done()
     }
   },
   async beforeRouteUpdate(routeTo) {
-    NProgress.start()
-
     try {
       const { data, headers } = await EventService.getEvents(
         2,
@@ -79,8 +72,6 @@ export default {
       this.totalEvents = headers['x-total-count']
     } catch (error) {
       return { name: 'NetworkError' }
-    } finally {
-      NProgress.done()
     }
   },
   computed: {
